@@ -1,6 +1,7 @@
 from flask import Flask, render_template, url_for, request, redirect, abort
-from src.models import db, Rating, Users
+from src.models import Comments, Rating_votes, db, Rating, Users
 from dotenv import load_dotenv
+from flask_migrate import Migrate
 from security import bcrypt
 import os
 
@@ -15,7 +16,7 @@ db_name = os.getenv('DB_NAME')
 app.config['SQLALCHEMY_DATABASE_URI'] = f'postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}'
 db.init_app(app)
 api_key = os.getenv('API_KEY')
-
+migrate = Migrate(app, db)
 bcrypt.init_app(app)
 
 @app.get('/')
@@ -152,9 +153,21 @@ def update_restroom(rating_id: int):
 
     return redirect(url_for('view_single_restroom', rating_id=rating_id))
 
-@app.post('/<int:rating_id>/delete')
+@app.post('/restroom/<int:rating_id>/delete')
 def delete_rating(rating_id: int):
     rating = Rating.query.get(rating_id)
+
+    # Delete comments
+    comments = Comments.query.filter(Comments.rating_id == rating_id).all()
+    for comment in comments:
+        db.session.delete(comment)
+
+    # Delete rating_votes
+    rating_votes = Rating_votes.query.filter(Rating_votes.rating_id_vote == rating_id).all()
+    for vote in rating_votes:
+        db.session.delete(vote)
+
+    #Delete rating
     db.session.delete(rating)
     db.session.commit()
     return redirect('/')
