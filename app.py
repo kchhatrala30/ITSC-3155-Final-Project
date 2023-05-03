@@ -311,7 +311,7 @@ def view_profile():
     if 'user' not in session:
         return redirect('/login')
     user = session['user']
-    return render_template('view_user.html', user=user)
+    return render_template('view_profile.html', user=user)
 
 
 # Log in to session
@@ -333,7 +333,7 @@ def user_login():
         session['user'] = { 
         'username': username
         }
-        return redirect('/view_user')
+        return redirect('/view_profile')
     
     return render_template('login.html', login_active=True)
 
