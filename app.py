@@ -11,6 +11,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 
 app.secret_key = os.getenv('APP_SECRET')
+app.config['SESSION_TYPE'] = 'filesystem'
 
 db.init_app(app)
 api_key = os.getenv('API_KEY')
@@ -253,6 +254,44 @@ def downvote(rating_id: int):
     return redirect(url_for('index'))
 
 
+# Comment upvote
+@app.post('/commentUpvote/<int:rating_id>')
+def comment_upvote(rating_id: int):
+    rating = Rating.query.get(rating_id)
+    print(rating)
+    print('upvoting')
+    if request.method == 'POST':
+        data = json.loads(request.data)
+        print(data['comment_id'])
+        comment = Comments.query.filter_by(comment_id = data['comment_id']).first()
+
+        if comment:
+            if comment.total_votes:
+                setattr(comment, 'total_votes', int(comment.total_votes) + 1)
+            else:
+                setattr(comment, 'total_votes', + 1)
+            db.session.commit()
+    return redirect(url_for('view_single_restroom', rating_id=rating_id))
+
+
+# Comment downvote
+@app.post('/commentDownvote/<int:rating_id>')
+def comment_downvote(rating_id: int):
+    rating = Rating.query.get(rating_id)
+    if request.method == 'POST':
+        data = json.loads(request.data)
+        print(data['comment_id'])
+        comment = Comments.query.filter_by(comment_id = data['comment_id']).first()
+
+        if comment:
+            if comment.total_votes:
+                setattr(comment, 'total_votes', int(comment.total_votes) - 1)
+            else:
+                setattr(comment, 'total_votes', -1)
+            db.session.commit()
+    return redirect(url_for('view_single_restroom', rating_id=rating_id))
+
+
 # Login page
 @app.get('/login')
 def login():
@@ -272,7 +311,7 @@ def view_profile():
     if 'user' not in session:
         return redirect('/login')
     user = session['user']
-    return render_template('view_profile.html', user=user)
+    return render_template('view_user.html', user=user)
 
 
 # Log in to session
@@ -292,14 +331,9 @@ def user_login():
 
     if bcrypt.check_password_hash(existing_user.password, password):
         session['user'] = { 
-        'username': username,
-        'fname': existing_user.first_name,
-        'lname': existing_user.last_name,
-        'email': existing_user.email
+        'username': username
         }
-        session['logged_in'] = True
-        message = "Success! you are logged in"
-        return render_template('index.html', login_active=True, message=message)
+        return redirect('/view_user')
     
     return render_template('login.html', login_active=True)
 
@@ -328,8 +362,5 @@ def register():
 # Log out of session
 @app.post('/logout')
 def logout():
-    if 'user' in session:
-        del session['user']
-    session.pop('logged_in', None)
-    logged_out_message = "You've been logged out!"
-    return render_template('login.html', login_active=True, logged_out_message=logged_out_message)
+    del session['user']
+    return redirect('/login')
