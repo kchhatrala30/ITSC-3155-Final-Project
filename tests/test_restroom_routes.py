@@ -42,7 +42,7 @@ def test_search_rating(test_client):
     db.session.add(temp_rating2)
     db.session.commit()
 
-    res = test_client.get('/search/?searchbox=Test')
+    res = test_client.get('/search?searchbox=Test')
     data = res.data.decode()
 
     #assert res.status_code == 200
@@ -50,7 +50,7 @@ def test_search_rating(test_client):
     assert '<h5 class="card-title">Testroom 2</h5>' in data
     assert '<div class="alert alert-danger" role="alert">No restrooms found!</div>' not in data
 
-    res = test_client.get('/search/?searchbox=NotInDB')
+    res = test_client.get('/search?searchbox=NotInDB')
     data = res.data.decode()
 
     assert '<h5 class="card-title">Testroom1</h5>' not in data
