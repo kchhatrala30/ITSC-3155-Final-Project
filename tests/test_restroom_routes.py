@@ -1,5 +1,6 @@
 from src.models import db, Rating, Users, Comments, Rating_votes, Comment_votes
 
+
 def test_delete_rating(test_client):
     # Clear database
     Rating.query.delete()
@@ -36,8 +37,24 @@ def test_search_rating(test_client):
     Rating.query.delete()
     db.session.commit()
 
-    temp_rating1 = Rating(rater_id=1, restroom_name="Testroom1", cleanliness=3.0, overall=3.5)
-    temp_rating2 = Rating(rater_id=2, restroom_name="Testroom 2", cleanliness=2.0, overall=2.5)
+    pass_data = bcrypt.generate_password_hash('testpassword')
+    hash_password = pass_data.decode('utf-8')
+    test_user = Users( 
+                        username='testuser', 
+                      password=hash_password, 
+                      first_name='John', 
+                      last_name='Doe', 
+                      email='test@example.com', 
+                      commented_on=None, 
+                      rupvoted_on=None, 
+                       rdownvoted_on=None, 
+                       cupvoted_on=None, 
+                       cdownvoted_on=None)
+    db.session.add(test_user)
+    db.session.commit()
+
+    temp_rating1 = Rating(rater_id=test_user.user_id, restroom_name="Testroom1", cleanliness=3.0, overall=3.5)
+    temp_rating2 = Rating(rater_id=test_user.user_id, restroom_name="Testroom 2", cleanliness=2.0, overall=2.5)
     db.session.add(temp_rating1)
     db.session.add(temp_rating2)
     db.session.commit()
@@ -56,6 +73,11 @@ def test_search_rating(test_client):
     assert '<h5 class="card-title">Testroom1</h5>' not in data
     assert '<h5 class="card-title">Testroom 2</h5>' not in data
     assert '<div class="alert alert-danger" role="alert">No restrooms found!</div>' in data
+
+    Rating.query.delete()
+    Users.query.delete()
+    db.session.commit()
+
 
 
 
